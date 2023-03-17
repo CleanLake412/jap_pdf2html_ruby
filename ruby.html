@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ルビ変換ツール</title>
+    
+	<!-- Bootstrap 5 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.0.1/css/bootstrap.min.css">
+
+    <!-- custom css -->
+    <style>
+        html {height: 100%;}
+        #txt-original {
+            height: calc(50vh - 60px);
+        }
+        #sec-ruby {
+            height: calc(50vh - 60px);
+            border: 1px solid #ddd;
+            overflow-y: auto;
+        }
+        #txt-ruby {
+            height: calc(100vh - 60px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-6">
+                <h2>OCRテキスト</h2>
+                <textarea class="w-100" id="txt-original">水害を防@ふせ@ぐため、人々はどんな努力をしてきたのでしょうか。
+川下のこう水
+
+　江戸@えど@時代になり、酒匂川の両岸にはていぼうが多くつくられるようになりました。しかし、ひとたび大雨がふり続くと、村々の人はみんなで協力して、ていぼうが切れないように守らなくてはなりませんでした。
+　今からおよそ230年ほど前の1791年の大水の時には、多舌@たこ@のていぼうが切れて、多舌@たこ@、井細田@いさいだ@、池上@いけがみ@、中島@なかじま@、今井@いまい@、町田@まちだ@、山王原@さんのうはら@の村々が水害をうけ、人々のくらしがおびやかされました。また、この時、栢山@かやま@のていぼうも切れてしまい、あたり一面の田畑は水びたしになってしまいました。しかし、その後、村の人たちは力を合わせて、ていぼうをなおす工事にとりかかりました。その中には、二宮金次郎もいました。まだ少年だった金次郎も、村の力になろうとこれにくわわって仕事をしたといわれています。
+　大水のいきおいでていぼうがくずれそうになると、竹であんだ細長いかご(じゃかご)に石をつめて土手にならべたり、土手にはえている木を切って、川の強い水の流れにあてたりしました。しかし、あまりにも水のいきおいがはげしく、ふせぎきれずに、ついに土手が切れてしまうこともありました。
+　そこで、ていぼうのところどころに切れ目をつくり、二重にかさなるていぼう(かすみ堤@てい@ともいいます)をつくっていきました。こうすることによって、ていぼうにそっていきおいよく流れてきた水は、切れ目にくると力がちらばっていきおいがよわまり、ていぼうとていぼうの間に流れこんで大きなよどみ(水たまり)をつくります。このようなよどみをいくつかのていぼうの間につくって、川の流れのいきおいをよわめる工夫をしました。</textarea>
+                <h2 class="mt-3">ルビ</h2>
+                <div class="w-100" id="sec-ruby"></div>
+            </div>
+            <div class="col-6">
+                <h2>HTML</h2>
+                <textarea class="w-100" readonly id="txt-ruby"></textarea>
+            </div>
+        </div>
+    </div>
+
+<!-- jQuery 3.6.4 -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"
+  integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8="
+  crossorigin="anonymous"></script>
+
+<!-- Custom -->
+<script>
+    let timerId = null;
+    $(function() {
+        $("#txt-original").on("change keydown", function() {
+            if (timerId) clearTimeout(timerId);
+            timerId = setTimeout(startConverting, 300);
+        }).trigger("change");
+    });
+    
+    function startConverting() {
+        let rubyHtml = convertOcr2Ruby($("#txt-original").val());
+        $("#sec-ruby").html(rubyHtml);
+        $("#txt-ruby").val(rubyHtml);
+    }
+    
+    function convertOcr2Ruby(data) {
+        //let regExHiragana = /[\u{3000}-\u{301C}\u{3041}-\u{3093}\u{309B}-\u{309E}]/gmu;
+        let regExRuby = /@[\u{3000}-\u{301C}\u{3041}-\u{3093}\u{309B}-\u{309E}]+@/gmu;
+        let regExKanji = /[一-龠]+/g;
+
+        // line break => <br>
+        data = data.replace(/(\r\n|\n|\r)/gm, "\n<br>\n");
+        
+        //let rubyList = data.match(regExRuby);
+        let ret, chr, i;
+        let rubyHtml = '', pos = 0;
+        while (ret = regExRuby.exec(data)) {
+            for (i = ret.index-1; i >= 0; i --) {
+                chr = data.substr(i, 1);
+                if (!chr.match(regExKanji)) break; 
+            }
+
+			//console.log(ret.index + ": " + data.substr(i+1, ret.index-i-1) + " - " + ret[0]);
+            rubyHtml += data.substr(pos, i-pos+1);
+            rubyHtml += `<ruby>${data.substr(i+1, ret.index-i-1)}<rt>${ret[0].substr(1, ret[0].length - 2)}</rt></ruby>`;
+            
+            pos = ret.index + ret[0].length;
+        }
+        rubyHtml += data.substr(pos);
+        
+        return rubyHtml;
+    }
+</script>
+</body>
+</html>
